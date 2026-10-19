@@ -1,4 +1,4 @@
-name: CI
+name: CI - Build, Test & Scan
 
 on: 
   push:
@@ -6,20 +6,40 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build-test:
+  build-test-scan:
+    name: Build, Test & Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
-      - name: Build
+
+      - name: 1. Build
         run: npm run build
-      - name: Test
+
+      - name: 2. Test
         run: npm test
+
+      - name: 3. Security Scan - Dependencies (SCA)
+        run: |
+          echo "Scanning dependencies for High/Critical CVEs..."
+          npm audit --audit-level=high
+
+      - name: 4. Security Scan - Secret Detection (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
