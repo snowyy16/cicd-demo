@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-demo-service
+spec:
+  type: LoadBalancer # Cân bằng tải và mở cổng ra bên ngoài máy tính
+  selector:
+    app: cicd-demo
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

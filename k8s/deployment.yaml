@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-demo-deployment
+  labels:
+    app: cicd-demo
+spec:
+  replicas: 2 # Luôn duy trì 2 Pod chạy song song
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Cho phép tạo thêm tối đa 1 Pod mới khi cập nhật
+      maxUnavailable: 0  # Đảm bảo không có Pod nào bị thiếu khi đang cập nhật (Zero-downtime)
+  selector:
+    matchLabels:
+      app: cicd-demo
+  template:
+    metadata:
+      labels:
+        app: cicd-demo
+    spec:
+      containers:
+        - name: cicd-demo
+          image: cicd-demo:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          
+          # Readiness Probe: Kiểm tra Pod đã sẵn sàng phục vụ chưa trước khi nhận traffic
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          # Liveness Probe: Kiểm tra ứng dụng còn sống không, nếu treo K8s sẽ tự restart
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
