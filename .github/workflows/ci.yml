@@ -54,16 +54,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
        # khởi tạo cluster kubernetes thử nghiệm github runner
-      - name: 5. Setup Lightweight Kubernetes (k3s)
-        uses: nolar/setup-k8s-k3s-action@v1
-        with:
-          version: v1.30.2+k3s1
+      - name: 5. Setup Kubernetes Cluster (KinD)
+        uses: helm/kind-action@v1.10.0
          # triển khai manifest và kiểm tra tình huống tự động rollback
       - name: 6. CD - Deploy to K8s & Auto-Rollback on Failure
         run: |
           echo "dong goi docker image tren runner..."
           docker build -t cicd-demo:1.0.0 .
-          docker save cicd-demo:1.0.0 | sudo k3s ctr images import -
+          kind load docker-image cicd-demo:1.0.0 --name chart-testing
           echo "ap dung manifest deployment va service..."
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
