@@ -1,17 +1,26 @@
+# dùng alpine linux siêu nhẹ để giảm thiểu lỗ hổng bảo mật
 FROM node:20-alpine
 
+# thư mục làm việc trong container
 WORKDIR /app
-# 3. Khai báo môi trường Production
+
+# thiết lập môi trường chạy production
 ENV NODE_ENV=production
-# 4. Copy package files trước để tận dụng Docker Cache
+
+# sao chép file khai báo thư viện trước để tận dụng bộ nhớ đệm
 COPY package*.json ./
-# 5. Cài đặt các thư viện phục vụ chạy ứng dụng (loại bỏ các thư viện test như jest)
+
+# chỉ cài đặt thư viện cần thiết, loại bỏ công cụ dev và test
 RUN npm ci --only=production
-# 6. Copy mã nguồn ứng dụng
+
+# sao chép mã nguồn ứng dụng
 COPY app.js server.js ./
-# 7. TIÊU CHUẨN BẢO MẬT: Chạy container dưới quyền user thường (node), không dùng root
+
+# chạy bằng tài khoản thường thay vì root để tăng cường bảo mật
 USER node
-# 8. Mở cổng 3000 cho ứng dụng
+
+# mở cổng ứng dụng
 EXPOSE 3000
-# 9. Lệnh khởi chạy server
+
+# lệnh khởi chạy máy chủ
 CMD ["node", "server.js"]

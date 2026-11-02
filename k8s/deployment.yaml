@@ -5,15 +5,20 @@ metadata:
   labels:
     app: cicd-demo
 spec:
-  replicas: 2 # Luôn duy trì 2 Pod chạy song song
+  # duy trì hai bản sao để đảm bảo tính sẵn sàng cao
+  replicas: 2
+
+  # cập nhật từng phần để dịch vụ không bị gián đoạn
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1        # Cho phép tạo thêm tối đa 1 Pod mới khi cập nhật
-      maxUnavailable: 0  # Đảm bảo không có Pod nào bị thiếu khi đang cập nhật (Zero-downtime)
+      maxSurge: 1
+      maxUnavailable: 0
+
   selector:
     matchLabels:
       app: cicd-demo
+
   template:
     metadata:
       labels:
@@ -21,12 +26,13 @@ spec:
     spec:
       containers:
         - name: cicd-demo
+          # sử dụng tag phiên bản cố định, không dùng latest
           image: cicd-demo:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
-          
-          # Readiness Probe: Kiểm tra Pod đã sẵn sàng phục vụ chưa trước khi nhận traffic
+
+          # kiểm tra ứng dụng sẵn sàng nhận khách chưa để hỗ trợ tự động rollback
           readinessProbe:
             httpGet:
               path: /health
@@ -34,7 +40,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
 
-          # Liveness Probe: Kiểm tra ứng dụng còn sống không, nếu treo K8s sẽ tự restart
+          # kiểm tra ứng dụng còn sống không, tự khởi động lại nếu bị sập
           livenessProbe:
             httpGet:
               path: /health
