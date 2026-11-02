@@ -1,11 +1,13 @@
 name: CI - Build, Test & Scan
 
+# kích hoạt khi có push hoặc pull request vào nhánh main
 on: 
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+# phân quyền tối thiểu chỉ đọc mã nguồn để bảo mật token
 permissions:
   contents: read
 
@@ -14,32 +16,57 @@ jobs:
     name: Build, Test & Security Scan
     runs-on: ubuntu-latest
     steps:
+      # tải toàn bộ mã nguồn và lịch sử commit
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # cài đặt môi trường node.js và bật bộ nhớ đệm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
+      # cài đặt các thư viện theo package-lock.json
       - name: Install dependencies
         run: npm ci
 
+      # kiểm tra cú pháp và khả năng biên dịch của mã nguồn
       - name: 1. Build
         run: npm run build
 
+      # chạy kiểm thử đơn vị tự động với jest
       - name: 2. Test
         run: npm test
 
+      # quét lỗ hổng thư viện và chặn các cảnh báo mức cao
       - name: 3. Security Scan - Dependencies (SCA)
         run: |
           echo "Scanning dependencies for High/Critical CVEs..."
           npm audit --audit-level=high
 
+      # quét mã nguồn để ngăn chặn rò rỉ secret hoặc token
       - name: 4. Security Scan - Secret Detection (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # triển khai lên kubernetes và tự động rollback nếu gặp sự cố
+      - name: 5. CD - Deploy to K8s & Auto-Rollback on Failure
+        run: |
+          echo "bat dau cap nhat phien ban moi len k8s cluster..."
+          kubectl set image deployment/cicd-demo-deployment cicd-demo=cicd-demo:2.0.0
+
+          echo "giam sat qua trinh rollout trong 30 giay..."
+          if ! kubectl rollout status deployment/cicd-demo-deployment --timeout=10s; then
+            echo "phat hien loi readiness probe hoac container gap su co!"
+            echo "pipeline tu dong rollback ve phien ban truoc do ngay lap tuc..."
+            kubectl rollout undo deployment/cicd-demo-deployment
+            kubectl rollout status deployment/cicd-demo-deployment
+            echo "da rollback ve phien ban an toan thanh cong!"
+            exit 1
+          fi
+
+          echo "trien khai thanh cong 100%!"

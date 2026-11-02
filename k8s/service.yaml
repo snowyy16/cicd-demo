@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: cicd-demo-service
 spec:
-  type: LoadBalancer # Cân bằng tải và mở cổng ra bên ngoài máy tính
+  # mở cổng và cân bằng tải lưu lượng ra bên ngoài
+  type: LoadBalancer
   selector:
+    # điều hướng yêu cầu đến các pod đang khỏe mạnh
     app: cicd-demo
   ports:
     - protocol: TCP
